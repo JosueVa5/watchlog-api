@@ -12,26 +12,37 @@ class Series(db.Model):
 
     __tablename__ = "series"
 
-    # TODO: definir columnas (id, title, total_seasons, created_at, updated_at).
-    # TODO: agregar columnas opcionales (synopsis, genres, image_url) si se desean.
+    # COLUMNAS DEFINIDAS (ARREGLADO)
+    id = db.Column(db.Integer, primary_key=True)  # CLAVE PRIMARIA
+    title = db.Column(db.String(100), nullable=False)
+    total_seasons = db.Column(db.Integer, default=1)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    
+    # Columnas opcionales
+    synopsis = db.Column(db.Text)
+    genres = db.Column(db.String(200))
+    image_url = db.Column(db.String(500))
 
-    # TODO: configurar relacion con Season (one-to-many) y WatchEntry.
-    # seasons = db.relationship("Season", back_populates="series", lazy="joined")
+    # RELACIÓN CONFIGURADA (ARREGLADO)
+    seasons = db.relationship("Season", back_populates="series", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         """Devuelve una representacion legible del modelo."""
-        return f"<Series id={getattr(self, 'id', None)} title={getattr(self, 'title', None)}>"
+        return f"<Series id={self.id} title={self.title}>"
 
     def to_dict(self, include_seasons: bool = False) -> dict:
         """Serializa la serie y opcionalmente sus temporadas."""
-        # TODO: reemplazar por serializacion real usando marshmallow o similar.
         data = {
-            "id": getattr(self, "id", None),
-            "title": getattr(self, "title", None),
-            "total_seasons": getattr(self, "total_seasons", None),
-            "created_at": getattr(self, "created_at", datetime.utcnow()),
+            "id": self.id,
+            "title": self.title,
+            "total_seasons": self.total_seasons,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "synopsis": self.synopsis,
+            "genres": self.genres,
+            "image_url": self.image_url,
         }
-        if include_seasons:
-            # TODO: serializar temporadas reales en lugar de lista vacia.
-            data["seasons"] = []
+        
+        if include_seasons and hasattr(self, 'seasons'):
+            data["seasons"] = [season.to_dict() for season in self.seasons]
+            
         return data
