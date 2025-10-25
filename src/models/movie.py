@@ -1,42 +1,29 @@
-"""Modelo para peliculas disponibles en el catalogo."""
-
-from __future__ import annotations
-
-from datetime import datetime
+"""Modelo principal para las peliculas."""
+from datetime import datetime, timezone
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.extensions import db
 
-
 class Movie(db.Model):
-    """Representa una pelicula cargada por los usuarios."""
+    """Representa una pelicula dentro del catalogo."""
 
-    __tablename__ = "movies"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(db.String(120), nullable=False)
+    genre: Mapped[str] = mapped_column(db.String(50), nullable=False)
+    release_year: Mapped[int] = mapped_column(nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
-    # COLUMNAS DEFINIDAS
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    genre = db.Column(db.String(50))
-    release_year = db.Column(db.Integer)
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
-    
-    # Columnas opcionales
-    synopsis = db.Column(db.Text)
-    duration = db.Column(db.Integer)  # Duración en minutos
-    image_url = db.Column(db.String(500))
 
     def __repr__(self) -> str:
-        """Devuelve una representacion legible del modelo."""
         return f"<Movie id={self.id} title={self.title}>"
 
     def to_dict(self) -> dict:
-        """Serializa la pelicula para respuestas JSON."""
         return {
             "id": self.id,
             "title": self.title,
             "genre": self.genre,
             "release_year": self.release_year,
-            "synopsis": self.synopsis,
-            "duration": self.duration,
-            "image_url": self.image_url,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
         }

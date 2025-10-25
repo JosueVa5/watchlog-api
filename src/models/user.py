@@ -1,35 +1,29 @@
 """Modelo para usuarios que usan la plataforma."""
-
-from __future__ import annotations
-
-from datetime import datetime
+from datetime import datetime, timezone
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.extensions import db
 
-
 class User(db.Model):
-    """Representa a un usuario (simulado mediante el header X-User-Id)."""
+    """Representa a un usuario."""
 
     __tablename__ = "users"
 
-    # COLUMNAS DEFINIDAS
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(100), unique=True)
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(db.String(100), nullable=False)
+    email: Mapped[str] = mapped_column(db.String(100), unique=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc))
 
-    # RELACIÓN CON WATCHENTRY
-    watch_entries = db.relationship("WatchEntry", back_populates="user", cascade="all, delete-orphan")
+    # Relación con WatchEntry
+    watch_entries = relationship("WatchEntry", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
-        """Devuelve una representacion legible del usuario."""
         return f"<User id={self.id} name={self.name}>"
 
     def to_dict(self) -> dict:
-        """Serializa al usuario para respuestas JSON."""
         return {
             "id": self.id,
             "name": self.name,
             "email": self.email,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": self.created_at.isoformat(),
         }

@@ -1,34 +1,37 @@
 """Modelo que representa una temporada de una serie."""
-
-from __future__ import annotations
+from datetime import datetime, timezone
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import UniqueConstraint
 
 from src.extensions import db
-
 
 class Season(db.Model):
     """Temporada asociada a una serie."""
 
     __tablename__ = "seasons"
 
-    # COLUMNAS DEFINIDAS (ARREGLADO)
-    id = db.Column(db.Integer, primary_key=True)  # CLAVE PRIMARIA
-    series_id = db.Column(db.Integer, db.ForeignKey('series.id'), nullable=False)
-    number = db.Column(db.Integer, nullable=False)  # Número de temporada
-    episodes_count = db.Column(db.Integer, nullable=False)  # Total de episodios
+    id: Mapped[int] = mapped_column(primary_key=True)
+    series_id: Mapped[int] = mapped_column(db.ForeignKey('series.id'), nullable=False)
+    number: Mapped[int] = mapped_column(nullable=False)  # Número de temporada
+    episodes_count: Mapped[int] = mapped_column(nullable=False)  # Total de episodios
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc))
 
     # Restricción única por (series_id, number)
     __table_args__ = (
-        db.UniqueConstraint('series_id', 'number', name='uq_series_season'),
+        UniqueConstraint('series_id', 'number', name='uq_series_season'),
     )
 
-    # RELACIÓN CONFIGURADA (ARREGLADO)
-    series = db.relationship("Series", back_populates="seasons")
+    # Relación con Series
+    series = relationship("Series", back_populates="seasons")
+
+    def __repr__(self) -> str:
+        return f"<Season id={self.id} series_id={self.series_id} number={self.number}>"
 
     def to_dict(self) -> dict:
-        """Serializa la temporada en un diccionario."""
         return {
             "id": self.id,
             "series_id": self.series_id,
             "number": self.number,
             "episodes_count": self.episodes_count,
+            "created_at": self.created_at.isoformat(),
         }

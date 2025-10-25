@@ -1,48 +1,45 @@
 """Modelo para series disponibles en el catalogo."""
-
-from __future__ import annotations
-
-from datetime import datetime
+from datetime import datetime, timezone
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.extensions import db
-
 
 class Series(db.Model):
     """Representa una serie cargada por los usuarios."""
 
-    __tablename__ = "series"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(db.String(100), nullable=False)
+    total_seasons: Mapped[int] = mapped_column(default=1)
+    synopsis: Mapped[str] = mapped_column(db.Text, nullable=True)
+    genres: Mapped[str] = mapped_column(db.String(200), nullable=True)
+    image_url: Mapped[str] = mapped_column(db.String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
-    # COLUMNAS DEFINIDAS (ARREGLADO)
-    id = db.Column(db.Integer, primary_key=True)  # CLAVE PRIMARIA
-    title = db.Column(db.String(100), nullable=False)
-    total_seasons = db.Column(db.Integer, default=1)
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
-    
-    # Columnas opcionales
-    synopsis = db.Column(db.Text)
-    genres = db.Column(db.String(200))
-    image_url = db.Column(db.String(500))
-
-    # RELACIÓN CONFIGURADA (ARREGLADO)
-    seasons = db.relationship("Season", back_populates="series", cascade="all, delete-orphan")
+    # Relaciones
+    seasons = relationship("Season", back_populates="series", cascade="all, delete-orphan")
+    watch_entries = relationship("WatchEntry", back_populates="series", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
-        """Devuelve una representacion legible del modelo."""
         return f"<Series id={self.id} title={self.title}>"
 
     def to_dict(self, include_seasons: bool = False) -> dict:
-        """Serializa la serie y opcionalmente sus temporadas."""
         data = {
             "id": self.id,
             "title": self.title,
             "total_seasons": self.total_seasons,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
             "synopsis": self.synopsis,
             "genres": self.genres,
             "image_url": self.image_url,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
         }
         
-        if include_seasons and hasattr(self, 'seasons'):
+        if include_seasons:
             data["seasons"] = [season.to_dict() for season in self.seasons]
             
         return data
+
+    def get_total_episodes(self) -> int:
+        """Calcula el total de episodios de todas las temporadas."""
+        return sum(season.episodes_count for season in self.seasons)
